@@ -60,7 +60,7 @@ const loginUser = async (req, res) => {
 
 const getAllUser = async (req, res) => {
   try {
-    const users = await User.find({}).select("-password");
+    const users = await User.find({ role: "user" }).select("-password");
 
     if (!users || users.length === 0) {
       return res
