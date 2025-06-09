@@ -20,6 +20,7 @@ const signupUser = async (req, res) => {
 
     res.status(201).json({
       message: "User created successfully",
+      _id: user.id,
       name: user.name,
       email: user.email,
       password: user.password,
@@ -50,6 +51,7 @@ const loginUser = async (req, res) => {
       name: user.name,
       email: user.email,
       token: generateToken(user._id),
+      role: user.role,
     });
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -59,27 +61,58 @@ const loginUser = async (req, res) => {
 const getAllUser = async (req, res) => {
   try {
     const users = await User.find({}).select("-password");
-    if (!users) return res.status(404).josn({ message: "Users rnot found" });
 
-    res.status(201).json({ message: "Fetched all useres", users });
+    if (!users || users.length === 0) {
+      return res
+        .status(404)
+        .json({ message: "No users with role 'user' found" });
+    }
+
+    res.status(200).json({ message: "Fetched users with role 'user'", users });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 };
 
-const updateUserRole = async (req, res) => {
+const updateUser = async (req, res) => {
+  console.log(req.body, "77");
   try {
-    const { userId, newRole } = req.body;
+    const { name, email, role, userRole } = req.body;
 
-    const user = await User.findById(userId);
+    const user = await User.findById(req.params.id);
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    user.role = newRole;
-    await user.save();
-    res.status(201).json({ message: "User role updated", user });
+    user.name = name || user.name;
+    user.email = email || user.email;
+    user.role = role || user.role;
+    user.userRole = userRole || user.userRole;
+
+    const updatedUser = await user.save();
+    res.status(200).json({
+      message: "User updated successfully",
+      user: {
+        id: updatedUser._id,
+        name: updatedUser.name,
+        email: updatedUser.email,
+        role: updatedUser.role,
+        userRole: updatedUser.userRole,
+      },
+    });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 };
 
-export { signupUser, loginUser, getAllUser };
+const deleteUser = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    await user.deleteOne();
+    res.status(200).json({ message: "User deleted successfully" });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+export { signupUser, loginUser, getAllUser, updateUser, deleteUser };
